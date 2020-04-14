@@ -23,11 +23,12 @@ class MapsPluginLayer extends StatefulWidget {
 }
 
 class _MapsPluginLayerState extends State<MapsPluginLayer>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   LatLng _currentLocation;
   UserLocationMarker _locationMarker;
   EventChannel _stream = EventChannel('locationStatusStream');
   var location = Location();
+  AppLifecycleState _lifecycleState;
 
   bool mapLoaded;
   bool initialStateOfupdateMapLocationOnPositionChange;
@@ -38,8 +39,24 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
   StreamSubscription<double> _compassStreamSubscription;
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    setState(() {
+      _lifecycleState = state;
+      print(state);
+      if (state == AppLifecycleState.resumed)
+        initialize();
+      else if (state != AppLifecycleState.resumed && state != null) {
+        _cancel(_onLocationChangedStreamSubscription);
+        _cancel(_compassStreamSubscription);
+      }
+    });
+  }
+
+  @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     initialStateOfupdateMapLocationOnPositionChange =
         widget.options.updateMapLocationOnPositionChange;
@@ -52,9 +69,10 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
 
   @override
   void dispose() {
-    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     _cancel(_onLocationChangedStreamSubscription);
     _cancel(_compassStreamSubscription);
+    super.dispose();
   }
 
   void _cancel(StreamSubscription streamSubscription) {
