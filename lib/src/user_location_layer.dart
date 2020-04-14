@@ -27,7 +27,7 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
   LatLng _currentLocation;
   UserLocationMarker _locationMarker;
   EventChannel _stream = EventChannel('locationStatusStream');
-  var location = Location();
+  Location location = Location.instance;
 
   bool mapLoaded;
   bool initialStateOfupdateMapLocationOnPositionChange;
@@ -40,11 +40,11 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     printLog("AppLifecycleState changed, new state: $state");
-    if (state == AppLifecycleState.resumed)
-      initialize();
-    else if (state != null) {
-      _cancel(_onLocationChangedStreamSubscription);
-      _cancel(_compassStreamSubscription);
+    if (state == AppLifecycleState.resumed) {
+      _subscribeToLocationChanges();
+    }
+    else if (state == AppLifecycleState.inactive || state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
+      _onLocationChangedStreamSubscription.cancel();
     }
   }
 
@@ -101,7 +101,6 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
 
   Future<void> _subscribeToLocationChanges() async {
     printLog("OnSubscribe to location change");
-    var location = Location();
     if (await location.requestService()) {
       _onLocationChangedStreamSubscription =
           location.onLocationChanged.listen((onValue) {
@@ -228,7 +227,6 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
         _locationStatusChanged = onData;
         printLog("LOCATION ACCESS CHANGED: CURRENT-> ${onData ? 'On' : 'Off'}");
         if (onData == false) {
-          var location = Location();
           location.requestService();
         }
         if (onData == true) {
