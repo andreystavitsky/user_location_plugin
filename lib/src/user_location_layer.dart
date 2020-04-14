@@ -28,7 +28,6 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
   UserLocationMarker _locationMarker;
   EventChannel _stream = EventChannel('locationStatusStream');
   var location = Location();
-  AppLifecycleState _lifecycleState;
 
   bool mapLoaded;
   bool initialStateOfupdateMapLocationOnPositionChange;
@@ -40,16 +39,13 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    setState(() {
-      _lifecycleState = state;
-      print(state);
-      if (state == AppLifecycleState.resumed)
-        initialize();
-      else if (state != AppLifecycleState.resumed && state != null) {
-        _cancel(_onLocationChangedStreamSubscription);
-        _cancel(_compassStreamSubscription);
-      }
-    });
+    printLog("AppLifecycleState changed, new state: $state");
+    if (state == AppLifecycleState.resumed)
+      initialize();
+    else if (state != null) {
+      _cancel(_onLocationChangedStreamSubscription);
+      _cancel(_compassStreamSubscription);
+    }
   }
 
   @override
