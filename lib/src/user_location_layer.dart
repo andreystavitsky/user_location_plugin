@@ -6,7 +6,7 @@ import 'package:flutter_map/plugin_api.dart';
 import 'package:user_location/src/user_location_marker.dart';
 import 'package:user_location/src/user_location_options.dart';
 import 'package:latlong/latlong.dart';
-import 'package:location/location.dart';
+import 'package:geolocation/geolocation.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import "dart:math" show pi;
@@ -27,14 +27,14 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
   LatLng _currentLocation;
   UserLocationMarker _locationMarker;
   EventChannel _stream = EventChannel('locationStatusStream');
-  Location location = Location.instance;
 
   bool mapLoaded;
   bool initialStateOfupdateMapLocationOnPositionChange;
+  bool _locationStatusChanged;
 
   double _direction;
 
-  StreamSubscription<LocationData> _onLocationChangedStreamSubscription;
+  StreamSubscription<LocationResult> _onLocationChangedStreamSubscription;
   StreamSubscription<double> _compassStreamSubscription;
 
   @override
@@ -42,9 +42,11 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
     printLog("AppLifecycleState changed, new state: $state");
     if (state == AppLifecycleState.resumed) {
       _subscribeToLocationChanges();
+      _handleCompassDirection();
     }
     else if (state == AppLifecycleState.inactive || state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
-      _onLocationChangedStreamSubscription.cancel();
+      _cancel(_onLocationChangedStreamSubscription);
+      _cancel(_compassStreamSubscription);
     }
   }
 
@@ -71,26 +73,38 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
     super.dispose();
   }
 
-  void _cancel(StreamSubscription streamSubscription) {
+  Future<void> _cancel(StreamSubscription streamSubscription) async {
     if (streamSubscription != null) {
-      streamSubscription.cancel();
+      await streamSubscription.cancel();
     }
   }
 
   void initialize() {
-    location.hasPermission().then((status) async {
-      if (status != PermissionStatus.granted) {
-        await location.requestPermission();
-        location.serviceEnabled().then((enabled) async {
-          if (!enabled) {
-            await location.requestService();
+    Geolocation.isLocationOperational(
+      permission: const LocationPermission(
+        android: LocationPermissionAndroid.fine,
+        ios: LocationPermissionIOS.always,
+    )).then((status) async {
+      if (status.isSuccessful) {
+        _subscribeToLocationChanges();
+      }
+      else {
+        await Geolocation.enableLocationServices();
+        Geolocation.requestLocationPermission(
+          permission: const LocationPermission(
+            android: LocationPermissionAndroid.fine,
+            ios: LocationPermissionIOS.always,
+          ),
+          openSettingsIfDenied: true,
+        ).then((status) {
+          if (status.isSuccessful) {
+            _subscribeToLocationChanges();
           }
         });
       }
-      _handleLocationChanges();
-      _subscribeToLocationChanges();
-      _handleCompassDirection();
     });
+    _handleCompassDirection();
+    //_handleLocationServiceStatusChanges();
   }
 
   void printLog(String log) {
@@ -101,23 +115,28 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
 
   Future<void> _subscribeToLocationChanges() async {
     printLog("OnSubscribe to location change");
-    if (await location.requestService()) {
+
+    await _cancel(_onLocationChangedStreamSubscription);
+
+    final locationStatus = await Geolocation.isLocationOperational();
+    if (locationStatus.isSuccessful) {
       _onLocationChangedStreamSubscription =
-          location.onLocationChanged.listen((onValue) {
-        _addsMarkerLocationToMarkerLocationStream(onValue);
-        setState(() {
-          if (onValue.latitude == null || onValue.longitude == null) {
-            _currentLocation = LatLng(0, 0);
-          } else {
-            _currentLocation = LatLng(onValue.latitude, onValue.longitude);
+        Geolocation.locationUpdates(accuracy: LocationAccuracy.best, inBackground: false).listen((result) {
+          _addsMarkerLocationToMarkerLocationStream(result.location);
+          setState(() {
+            if (result.location.latitude == null || result.location.longitude == null) {
+              _currentLocation = LatLng(0, 0);
+          } 
+          else {
+            _currentLocation = LatLng(result.location.latitude, result.location.longitude);
           }
 
-          var height = 20.0 * (1 - (onValue.accuracy / 100));
-          var width = 20.0 * (1 - (onValue.accuracy / 100));
+          /*var height = 20.0 * (1 - (result.location.accuracy / 100));
+          var width = 20.0 * (1 - (result.location.accuracy / 100));
           if (height < 0 || width < 0) {
             height = 20;
             width = 20;
-          }
+          }*/
 
           if (_locationMarker != null) {
             widget.options.markers.remove(_locationMarker);
@@ -219,22 +238,22 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
     }
   }
 
-  void _handleLocationChanges() {
+  /*Future<void> _handleLocationServiceStatusChanges() async {
     printLog(_stream.toString());
-    bool _locationStatusChanged;
-    if (_locationStatusChanged == null) {
-      _stream.receiveBroadcastStream().listen((onData) {
-        _locationStatusChanged = onData;
-        printLog("LOCATION ACCESS CHANGED: CURRENT-> ${onData ? 'On' : 'Off'}");
-        if (onData == false) {
-          location.requestService();
-        }
-        if (onData == true) {
-          _subscribeToLocationChanges();
-        }
-      });
-    }
-  }
+    await _cancel(_onLocationChangedStreamSubscription);
+
+    _stream.receiveBroadcastStream().listen((onData) {
+      _locationStatusChanged = onData;
+      printLog("LOCATION ACCESS CHANGED: CURRENT-> ${onData ? 'On' : 'Off'}");
+      if (onData == false) {
+        _cancel(_onLocationChangedStreamSubscription);
+        Geolocation.enableLocationServices();
+      }
+      if (onData == true) {
+        _subscribeToLocationChanges();
+      }
+    });
+  }*/
 
   void _handleCompassDirection() {
     _compassStreamSubscription =
@@ -246,7 +265,7 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
     });
   }
 
-  _addsMarkerLocationToMarkerLocationStream(LocationData onValue) {
+  _addsMarkerLocationToMarkerLocationStream(Location onValue) {
     if (widget.options.onLocationUpdate == null) {
       printLog("Stream not provided");
     } else {

@@ -23,14 +23,14 @@ class MyApp extends StatelessWidget {
 class HomePage extends StatelessWidget {
   MapController mapController = MapController();
   List<Marker> markers = [];
-  StreamController<LatLng> markerlocationStream = StreamController();
+  //StreamController<LatLng> markerlocationStream = StreamController();
   UserLocationOptions userLocationOptions;
   @override
   Widget build(BuildContext context) {
     //Get the current location of marker
-    markerlocationStream.stream.listen((onData) {
+    /*markerlocationStream.stream.listen((onData) {
       // print(onData.latitude);
-    });
+    });*/
 
     userLocationOptions = UserLocationOptions(
         context: context,
@@ -43,7 +43,7 @@ class HomePage extends StatelessWidget {
         zoomToCurrentLocationOnLoad: false,
         fabBottom: 50,
         fabRight: 50,
-        verbose: false);
+        verbose: true);
 
     //You can also change the value of updateMapLocationOnPositionChange programatically in runtime.
     //userLocationOptions.updateMapLocationOnPositionChange = false;
@@ -77,6 +77,6 @@ class HomePage extends StatelessWidget {
   }
 
   void dispose() {
-    markerlocationStream.close();
+    //markerlocationStream.close();
   }
 }

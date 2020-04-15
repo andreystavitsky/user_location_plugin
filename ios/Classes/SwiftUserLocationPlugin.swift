@@ -8,9 +8,9 @@ public class SwiftUserLocationPlugin: NSObject, FlutterPlugin {
         let instance = SwiftUserLocationPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
         
-        let eventChannel = FlutterEventChannel(name: "locationStatusStream", binaryMessenger: registrar.messenger())
+        /*let eventChannel = FlutterEventChannel(name: "locationStatusStream", binaryMessenger: registrar.messenger())
         
-        eventChannel.setStreamHandler(LocationStreamHandler())
+        eventChannel.setStreamHandler(LocationStreamHandler())*/
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -18,7 +18,7 @@ public class SwiftUserLocationPlugin: NSObject, FlutterPlugin {
     }
 }
 
-class LocationStreamHandler: NSObject, FlutterStreamHandler {
+/*class LocationStreamHandler: NSObject, FlutterStreamHandler {
     
     private var _eventSink: FlutterEventSink?
     
@@ -31,5 +31,5 @@ class LocationStreamHandler: NSObject, FlutterStreamHandler {
         _eventSink = nil
         return nil
     }
-}
+}*/
 

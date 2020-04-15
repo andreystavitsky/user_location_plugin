@@ -22,40 +22,35 @@ class UserLocationPlugin: MethodCallHandler {
       val channel = MethodChannel(registrar.messenger(), "user_location")
       channel.setMethodCallHandler(UserLocationPlugin())
 
-      val eventChannel = EventChannel(registrar.messenger(), "locationStatusStream")
+      /*val eventChannel = EventChannel(registrar.messenger(), "locationStatusStream")
 
-     eventChannel.setStreamHandler(
-            object: StreamHandler {
-                override fun onListen(p0: Any?, p1: EventSink) {
-                    val listener = object : LocationListener {
-                        override fun onLocationChanged(location: android.location.Location) {
-                        }
+      eventChannel.setStreamHandler(
+        object: StreamHandler {
+          override fun onListen(p0: Any?, p1: EventSink) {
+            val listener = object : LocationListener {
+              override fun onLocationChanged(location: android.location.Location) {
 
-                        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
+              }
 
-                        }
+              override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
 
-                        override fun onProviderEnabled(provider: String) {
-                            p1.success(true)
-                        }
+              }
 
-                        override fun onProviderDisabled(provider: String) {
-                            p1.success(false)
-                        }
-                    }
+              override fun onProviderEnabled(provider: String) {
+                p1.success(true)
+              }
 
-                    val locationManager = registrar.activeContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                            2000,
-                            10f, listener)
-
-                }
-                override fun onCancel(p0: Any?) {
-                }
+              override fun onProviderDisabled(provider: String) {
+                p1.success(false)
+              }
             }
-     )
+          }
 
-
+          override fun onCancel(p0: Any?) {
+            
+          }
+        }
+      )*/
     }
   }
 
