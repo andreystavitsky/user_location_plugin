@@ -26,7 +26,7 @@ class UserLocationOptions extends LayerOptions {
 
   UserLocationOptions(
       {@required this.context,
-      @required this.markers,
+      markers,
       this.mapController,
       this.markerWidget,
       this.onLocationUpdate,
@@ -40,5 +40,6 @@ class UserLocationOptions extends LayerOptions {
       this.fabWidth: 40,
       this.defaultZoom: 15,
       this.zoomToCurrentLocationOnLoad: false,
-      this.showHeading: true});
+      this.showHeading: true}):
+      markers = markers ?? [];
 }

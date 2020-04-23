@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
 
 class HomePage extends StatelessWidget {
   MapController mapController = MapController();
-  List<Marker> markers = [];
+
   //StreamController<LatLng> markerlocationStream = StreamController();
   UserLocationOptions userLocationOptions;
   @override
@@ -35,7 +35,6 @@ class HomePage extends StatelessWidget {
     userLocationOptions = UserLocationOptions(
         context: context,
         mapController: mapController,
-        markers: markers,
         onLocationUpdate: (LatLng pos) =>
             print("onLocationUpdate ${pos.toString()}"),
         updateMapLocationOnPositionChange: false,
@@ -68,7 +67,7 @@ class HomePage extends StatelessWidget {
               'id': 'mapbox.streets',
             },
           ),
-          MarkerLayerOptions(markers: markers),
+          MarkerLayerOptions(markers: userLocationOptions.markers),
           userLocationOptions
         ],
         mapController: mapController,

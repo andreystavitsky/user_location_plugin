@@ -151,7 +151,7 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
               point:
                   LatLng(_currentLocation.latitude, _currentLocation.longitude),
               builder: (context) {
-                return Container(
+                return IgnorePointer(
                   child: Column(
                     children: <Widget>[
                       Stack(
