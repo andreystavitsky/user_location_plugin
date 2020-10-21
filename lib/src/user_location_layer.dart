@@ -35,7 +35,7 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
   double _direction;
 
   StreamSubscription<LocationResult> _onLocationChangedStreamSubscription;
-  StreamSubscription<double> _compassStreamSubscription;
+  StreamSubscription<CompassEvent> _compassStreamSubscription;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -43,8 +43,9 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
     if (state == AppLifecycleState.resumed) {
       _subscribeToLocationChanges();
       _handleCompassDirection();
-    }
-    else if (state == AppLifecycleState.inactive || state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.paused) {
       _cancel(_onLocationChangedStreamSubscription);
       _cancel(_compassStreamSubscription);
     }
@@ -81,14 +82,13 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
 
   void initialize() {
     Geolocation.isLocationOperational(
-      permission: const LocationPermission(
-        android: LocationPermissionAndroid.fine,
-        ios: LocationPermissionIOS.always,
+        permission: const LocationPermission(
+      android: LocationPermissionAndroid.fine,
+      ios: LocationPermissionIOS.always,
     )).then((status) async {
       if (status.isSuccessful) {
         _subscribeToLocationChanges();
-      }
-      else {
+      } else {
         await Geolocation.enableLocationServices();
         Geolocation.requestLocationPermission(
           permission: const LocationPermission(
@@ -104,7 +104,6 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
       }
     });
     _handleCompassDirection();
-    //_handleLocationServiceStatusChanges();
   }
 
   void printLog(String log) {
@@ -120,15 +119,17 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
 
     final locationStatus = await Geolocation.isLocationOperational();
     if (locationStatus.isSuccessful) {
-      _onLocationChangedStreamSubscription =
-        Geolocation.locationUpdates(accuracy: LocationAccuracy.best, inBackground: false).listen((result) {
-          _addsMarkerLocationToMarkerLocationStream(result.location);
-          setState(() {
-            if (result.location.latitude == null || result.location.longitude == null) {
-              _currentLocation = LatLng(0, 0);
-          } 
-          else {
-            _currentLocation = LatLng(result.location.latitude, result.location.longitude);
+      _onLocationChangedStreamSubscription = Geolocation.locationUpdates(
+              accuracy: LocationAccuracy.best, inBackground: false)
+          .listen((result) {
+        _addsMarkerLocationToMarkerLocationStream(result.location);
+        setState(() {
+          if (result.location.latitude == null ||
+              result.location.longitude == null) {
+            _currentLocation = LatLng(0, 0);
+          } else {
+            _currentLocation =
+                LatLng(result.location.latitude, result.location.longitude);
           }
 
           /*var height = 20.0 * (1 - (result.location.accuracy / 100));
@@ -231,35 +232,14 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
           zoom ?? widget.map.zoom ?? 15,
           widget.options.mapController,
           this);
-      // widget.options.mapController.move(
-      //     LatLng(_currentLocation.latitude ?? LatLng(0, 0),
-      //         _currentLocation.longitude ?? LatLng(0, 0)),
-      //     widget.map.zoom ?? 15);
     }
   }
 
-  /*Future<void> _handleLocationServiceStatusChanges() async {
-    printLog(_stream.toString());
-    await _cancel(_onLocationChangedStreamSubscription);
-
-    _stream.receiveBroadcastStream().listen((onData) {
-      _locationStatusChanged = onData;
-      printLog("LOCATION ACCESS CHANGED: CURRENT-> ${onData ? 'On' : 'Off'}");
-      if (onData == false) {
-        _cancel(_onLocationChangedStreamSubscription);
-        Geolocation.enableLocationServices();
-      }
-      if (onData == true) {
-        _subscribeToLocationChanges();
-      }
-    });
-  }*/
-
   void _handleCompassDirection() {
     _compassStreamSubscription =
-        FlutterCompass.events.listen((double direction) {
+        FlutterCompass.events.listen((CompassEvent event) {
       setState(() {
-        _direction = direction;
+        _direction = event.heading;
       });
       forceMapUpdate();
     });
@@ -279,7 +259,7 @@ class _MapsPluginLayerState extends State<MapsPluginLayer>
         !widget.options.markers.contains(_locationMarker)) {
       widget.options.markers.add(_locationMarker);
     }
-    
+
     return widget.options.showMoveToCurrentLocationFloatingActionButton
         ? Positioned(
             bottom: widget.options.fabBottom,
@@ -374,13 +354,13 @@ class MyDirectionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // create a bounding square, based on the centre and radius of the arc
-    Rect rect = new Rect.fromCircle(
-      center: new Offset(30.0, 30.0),
+    Rect rect = Rect.fromCircle(
+      center: Offset(30.0, 30.0),
       radius: 40.0,
     );
 
     // a fancy rainbow gradient
-    final Gradient gradient = new RadialGradient(
+    final Gradient gradient = RadialGradient(
       colors: <Color>[
         Colors.blue.shade500.withOpacity(0.6),
         Colors.blue.shade500.withOpacity(0.3),
@@ -394,7 +374,7 @@ class MyDirectionPainter extends CustomPainter {
     );
 
     // create the Shader from the gradient and the bounding square
-    final Paint paint = new Paint()..shader = gradient.createShader(rect);
+    final Paint paint = Paint()..shader = gradient.createShader(rect);
 
     // and draw an arc
     canvas.drawArc(rect, pi / 5, pi * 3 / 5, true, paint);
